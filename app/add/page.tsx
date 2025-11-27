@@ -12,7 +12,7 @@ export default function AddCardPage() {
     const [isScanning, setIsScanning] = useState(false)
 
     const { ref } = useZxing({
-        onDecodeResult(result) {
+        onResult(result) {
             setScannedResult(result.getText())
             setIsScanning(false)
         },
