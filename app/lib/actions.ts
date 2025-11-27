@@ -7,8 +7,6 @@ import { AuthError } from 'next-auth'
 import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import fs from 'fs/promises'
-import path from 'path'
 
 export async function authenticate(prevState: string | undefined, formData: FormData) {
     try {
@@ -84,18 +82,11 @@ export async function createCard(prevState: string | undefined, formData: FormDa
 
     let imagePath = null
     if (imageFile && imageFile.size > 0) {
+        // Convert to base64 for storage (Vercel doesn't have persistent file system)
         const buffer = Buffer.from(await imageFile.arrayBuffer())
-        const filename = `${Date.now()}-${imageFile.name.replace(/[^a-zA-Z0-9.]/g, '')}`
-        const uploadDir = path.join(process.cwd(), 'public', 'uploads')
-
-        try {
-            await fs.mkdir(uploadDir, { recursive: true })
-            await fs.writeFile(path.join(uploadDir, filename), buffer)
-            imagePath = `/uploads/${filename}`
-        } catch (e) {
-            console.error('Upload failed', e)
-            return 'Image upload failed'
-        }
+        const base64 = buffer.toString('base64')
+        const mimeType = imageFile.type || 'image/jpeg'
+        imagePath = `data:${mimeType};base64,${base64}`
     }
 
     await prisma.card.create({
