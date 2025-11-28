@@ -54,3 +54,5 @@ package-lock.json
 
 # documentation
 VERCEL_DEPLOY.md
+.vercel
+.env*.local
