@@ -12,7 +12,7 @@ Requirements for production launch. Each maps to roadmap phases.
 - [x] **BUG-01**: "Skip for now" on subscribe page sets `subscriptionSelected = true` and redirects to dashboard (currently infinite redirect loop)
 - [x] **BUG-02**: Uploaded images deleted from disk when card is deleted (`fs.unlink` the file in `public/uploads/`)
 - [x] **BUG-03**: Old image file cleaned up when card image is replaced via update
-- [ ] **BUG-04**: Barcode component shows error state instead of blank when bwip-js render fails (fallback: raw number + copy button)
+- [x] **BUG-04**: Barcode component shows error state instead of blank when bwip-js render fails (fallback: raw number + copy button)
 - [ ] **BUG-05**: JWT callback only refreshes subscription data on `trigger === 'update'`, not on every request
 
 ### Security
@@ -39,9 +39,9 @@ Requirements for production launch. Each maps to roadmap phases.
 
 - [ ] **UX-01**: Categorized barcode scan error messages with actionable remediation text (permission denied, camera not found, decode failure)
 - [ ] **UX-02**: Inline client-side form validation on register, login, and card forms (validate on blur, field-level errors)
-- [ ] **UX-03**: Empty state for dashboard with no cards (illustration + "Add your first card" CTA)
-- [ ] **UX-04**: Loading/pending states on all Server Action buttons (spinner or "Saving...")
-- [ ] **UX-05**: Toast notification system for non-blocking errors (image upload failures, network errors) via sonner
+- [x] **UX-03**: Empty state for dashboard with no cards (illustration + "Add your first card" CTA)
+- [x] **UX-04**: Loading/pending states on all Server Action buttons (spinner or "Saving...")
+- [x] **UX-05**: Toast notification system for non-blocking errors (image upload failures, network errors) via sonner
 
 ### Subscription & Billing
 
@@ -110,7 +110,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | BUG-01 | Phase 1 | Complete |
 | BUG-02 | Phase 1 | Complete |
 | BUG-03 | Phase 1 | Complete |
-| BUG-04 | Phase 2 | Pending |
+| BUG-04 | Phase 2 | Complete |
 | BUG-05 | Phase 3 | Pending |
 | SEC-01 | Phase 1 | Complete |
 | SEC-02 | Phase 1 | Complete |
@@ -125,9 +125,9 @@ Deferred to future release. Tracked but not in current roadmap.
 | PERF-03 | Phase 1 | Complete |
 | UX-01 | Phase 2 | Pending |
 | UX-02 | Phase 2 | Pending |
-| UX-03 | Phase 2 | Pending |
-| UX-04 | Phase 2 | Pending |
-| UX-05 | Phase 2 | Pending |
+| UX-03 | Phase 2 | Complete |
+| UX-04 | Phase 2 | Complete |
+| UX-05 | Phase 2 | Complete |
 | SUB-01 | Phase 4 | Pending |
 | SUB-02 | Phase 4 | Pending |
 | SUB-03 | Phase 4 | Pending |

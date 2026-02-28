@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-02-28T21:09:22.793Z"
+last_updated: "2026-02-28T23:17:00Z"
 progress:
-  total_phases: 1
+  total_phases: 6
   completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
+  total_plans: 12
+  completed_plans: 4
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-02-28)
 
 **Core value:** Users can reliably store and retrieve their loyalty cards — including barcodes that scan at the register — even when offline.
-**Current focus:** Phase 1: Bug Fixes and Security
+**Current focus:** Phase 2: UX Quality and Error Handling
 
 ## Current Position
 
-Phase: 1 of 6 (Bug Fixes and Security) — COMPLETE
-Plan: 3 of 3 in current phase
-Status: Phase 1 complete — all 3 plans executed
-Last activity: 2026-02-28 — Plans 01, 02, and 03 executed
+Phase: 2 of 6 (UX Quality and Error Handling) — IN PROGRESS
+Plan: 1 of 3 in current phase (Plan 01 complete)
+Status: Phase 2 plan 01 complete — 2 remaining in phase
+Last activity: 2026-02-28 — Phase 2 Plan 01 executed
 
-Progress: [███░░░░░░░] 17%
+Progress: [████░░░░░░] 22%
 
 ## Performance Metrics
 
@@ -41,10 +41,11 @@ Progress: [███░░░░░░░] 17%
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-bug-fixes-and-security | 3 | ~18 min | ~6 min |
+| 02-ux-quality-and-error-handling | 1 | ~8 min | ~8 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01, 01-02, 01-03
-- Trend: Fast and consistent (~5-7 min each)
+- Last 5 plans: 01-01, 01-02, 01-03, 02-01
+- Trend: Fast and consistent (~6-8 min each)
 
 *Updated after each plan completion*
 
@@ -66,6 +67,9 @@ Recent decisions affecting current work:
 - [01-02]: next/script with afterInteractive strategy for SW registration — CSP-compliant and non-blocking
 - [Phase 01-bug-fixes-and-security]: useBarcodeScanner hook accepts optional initialBarcodeValue/initialBarcodeFormat for edit mode compatibility
 - [Phase 01-bug-fixes-and-security]: Added .claude/** to eslint ignores — CJS tooling files caused 70 pre-existing lint errors
+- [02-01]: validateField uses ZodTypeAny cast on schema.shape[name] — Zod v4 changed internal type names, cast required for TypeScript compatibility
+- [02-01]: ToasterWithTheme uses position top-center — BottomNav fixed at bottom, bottom toast position would collide
+- [02-01]: Barcode copy fallback uses inline copied state (not toast) — compact context where toast would feel heavy-handed
 
 ### Pending Todos
 
@@ -79,5 +83,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-28
-Stopped at: Completed 01-03-PLAN.md (code deduplication + React 19 migration)
-Resume file: Phase 1 complete — begin Phase 2
+Stopped at: Completed 02-01-PLAN.md (UX foundation: sonner, SubmitButton, validation schemas, Barcode fallback)
+Resume file: Phase 2 in progress — begin Plan 02 (login/register form validation)
