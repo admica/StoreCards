@@ -1,8 +1,9 @@
 'use client'
 
 import { useActionState } from 'react'
-import { useFormStatus } from 'react-dom'
 import { register } from '@/app/lib/actions'
+import { registerSchema, validateField } from '@/app/lib/validation'
+import { SubmitButton } from '@/app/components/SubmitButton'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
@@ -12,10 +13,13 @@ export default function Page() {
     const router = useRouter()
     const formRef = useRef<HTMLFormElement>(null)
     const [email, setEmail] = useState('')
+    const [password, setPassword] = useState('')
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
     // Handle successful registration redirect
     useEffect(() => {
         if (errorMessage === 'success') {
+            setFieldErrors({})
             router.push('/subscribe')
         }
     }, [errorMessage, router, email])
@@ -54,10 +58,26 @@ export default function Page() {
                             autoComplete="email"
                             required
                             value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="block w-full rounded-xl border border-border dark:border-border bg-background dark:bg-surface-elevated px-4 py-3 text-primary placeholder-muted shadow-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all text-sm"
+                            onChange={(e) => {
+                                setEmail(e.target.value)
+                                if (fieldErrors.email) {
+                                    const error = validateField(registerSchema, 'email', e.target.value)
+                                    if (!error) setFieldErrors(prev => { const next = { ...prev }; delete next.email; return next })
+                                }
+                            }}
+                            onBlur={(e) => {
+                                const error = validateField(registerSchema, 'email', e.target.value)
+                                if (error) setFieldErrors(prev => ({ ...prev, email: error }))
+                                else setFieldErrors(prev => { const next = { ...prev }; delete next.email; return next })
+                            }}
+                            className={`block w-full rounded-xl border bg-background dark:bg-surface-elevated px-4 py-3 text-primary placeholder-muted shadow-sm focus:outline-none focus:ring-2 transition-all text-sm ${fieldErrors.email
+                                ? 'border-error focus:border-error focus:ring-error/20'
+                                : 'border-border dark:border-border focus:border-accent focus:ring-accent/20'}`}
                             placeholder="you@example.com"
                         />
+                        {fieldErrors.email && (
+                            <p className="mt-1 text-xs text-error" role="alert">{fieldErrors.email}</p>
+                        )}
                     </div>
 
                     <div>
@@ -70,14 +90,34 @@ export default function Page() {
                             type="password"
                             autoComplete="new-password"
                             required
-                            className="block w-full rounded-xl border border-border dark:border-border bg-background dark:bg-surface-elevated px-4 py-3 text-primary placeholder-muted shadow-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all text-sm"
+                            value={password}
+                            onChange={(e) => {
+                                setPassword(e.target.value)
+                                if (fieldErrors.password) {
+                                    const error = validateField(registerSchema, 'password', e.target.value)
+                                    if (!error) setFieldErrors(prev => { const next = { ...prev }; delete next.password; return next })
+                                }
+                            }}
+                            onBlur={(e) => {
+                                const error = validateField(registerSchema, 'password', e.target.value)
+                                if (error) setFieldErrors(prev => ({ ...prev, password: error }))
+                                else setFieldErrors(prev => { const next = { ...prev }; delete next.password; return next })
+                            }}
+                            className={`block w-full rounded-xl border bg-background dark:bg-surface-elevated px-4 py-3 text-primary placeholder-muted shadow-sm focus:outline-none focus:ring-2 transition-all text-sm ${fieldErrors.password
+                                ? 'border-error focus:border-error focus:ring-error/20'
+                                : 'border-border dark:border-border focus:border-accent focus:ring-accent/20'}`}
                             placeholder="••••••••"
                         />
-                        <p className="mt-1.5 text-xs text-muted">Must be at least 6 characters</p>
+                        {fieldErrors.password && (
+                            <p className="mt-1 text-xs text-error" role="alert">{fieldErrors.password}</p>
+                        )}
+                        {!fieldErrors.password && (
+                            <p className="mt-1.5 text-xs text-muted">Must be at least 6 characters</p>
+                        )}
                     </div>
 
                     <div className="pt-2">
-                        <RegisterButton />
+                        <SubmitButton label="Create account" pendingLabel="Creating account..." />
                     </div>
 
                     <div
@@ -106,29 +146,5 @@ export default function Page() {
                 </div>
             </div>
         </div>
-    )
-}
-
-function RegisterButton() {
-    const { pending } = useFormStatus()
-
-    return (
-        <button
-            type="submit"
-            disabled={pending}
-            className="flex w-full justify-center items-center gap-2 rounded-xl bg-gradient-to-r from-accent to-accent-light px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-accent/25 hover:shadow-accent/40 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all"
-        >
-            {pending ? (
-                <>
-                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Creating account...
-                </>
-            ) : (
-                'Create account'
-            )}
-        </button>
     )
 }

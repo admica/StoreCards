@@ -1,12 +1,17 @@
 'use client'
 
-import { useActionState } from 'react'
-import { useFormStatus } from 'react-dom'
+import { useActionState, useState } from 'react'
 import { authenticate } from '@/app/lib/actions'
+import { loginSchema, validateField } from '@/app/lib/validation'
+import { SubmitButton } from '@/app/components/SubmitButton'
 import Link from 'next/link'
 
 export default function Page() {
     const [errorMessage, dispatch, _isPending] = useActionState(authenticate, undefined)
+
+    const [email, setEmail] = useState('')
+    const [password, setPassword] = useState('')
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
     return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
@@ -41,9 +46,27 @@ export default function Page() {
                             type="email"
                             autoComplete="email"
                             required
-                            className="block w-full rounded-xl border border-border dark:border-border bg-background dark:bg-surface-elevated px-4 py-3 text-primary placeholder-muted shadow-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all text-sm"
+                            value={email}
+                            onChange={(e) => {
+                                setEmail(e.target.value)
+                                if (fieldErrors.email) {
+                                    const error = validateField(loginSchema, 'email', e.target.value)
+                                    if (!error) setFieldErrors(prev => { const next = { ...prev }; delete next.email; return next })
+                                }
+                            }}
+                            onBlur={(e) => {
+                                const error = validateField(loginSchema, 'email', e.target.value)
+                                if (error) setFieldErrors(prev => ({ ...prev, email: error }))
+                                else setFieldErrors(prev => { const next = { ...prev }; delete next.email; return next })
+                            }}
+                            className={`block w-full rounded-xl border bg-background dark:bg-surface-elevated px-4 py-3 text-primary placeholder-muted shadow-sm focus:outline-none focus:ring-2 transition-all text-sm ${fieldErrors.email
+                                ? 'border-error focus:border-error focus:ring-error/20'
+                                : 'border-border dark:border-border focus:border-accent focus:ring-accent/20'}`}
                             placeholder="you@example.com"
                         />
+                        {fieldErrors.email && (
+                            <p className="mt-1 text-xs text-error" role="alert">{fieldErrors.email}</p>
+                        )}
                     </div>
 
                     <div>
@@ -56,13 +79,31 @@ export default function Page() {
                             type="password"
                             autoComplete="current-password"
                             required
-                            className="block w-full rounded-xl border border-border dark:border-border bg-background dark:bg-surface-elevated px-4 py-3 text-primary placeholder-muted shadow-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all text-sm"
+                            value={password}
+                            onChange={(e) => {
+                                setPassword(e.target.value)
+                                if (fieldErrors.password) {
+                                    const error = validateField(loginSchema, 'password', e.target.value)
+                                    if (!error) setFieldErrors(prev => { const next = { ...prev }; delete next.password; return next })
+                                }
+                            }}
+                            onBlur={(e) => {
+                                const error = validateField(loginSchema, 'password', e.target.value)
+                                if (error) setFieldErrors(prev => ({ ...prev, password: error }))
+                                else setFieldErrors(prev => { const next = { ...prev }; delete next.password; return next })
+                            }}
+                            className={`block w-full rounded-xl border bg-background dark:bg-surface-elevated px-4 py-3 text-primary placeholder-muted shadow-sm focus:outline-none focus:ring-2 transition-all text-sm ${fieldErrors.password
+                                ? 'border-error focus:border-error focus:ring-error/20'
+                                : 'border-border dark:border-border focus:border-accent focus:ring-accent/20'}`}
                             placeholder="••••••••"
                         />
+                        {fieldErrors.password && (
+                            <p className="mt-1 text-xs text-error" role="alert">{fieldErrors.password}</p>
+                        )}
                     </div>
 
                     <div className="pt-2">
-                        <LoginButton />
+                        <SubmitButton label="Sign in" pendingLabel="Signing in..." />
                     </div>
 
                     <div
@@ -91,29 +132,5 @@ export default function Page() {
                 </div>
             </div>
         </div>
-    )
-}
-
-function LoginButton() {
-    const { pending } = useFormStatus()
-
-    return (
-        <button
-            type="submit"
-            disabled={pending}
-            className="flex w-full justify-center items-center gap-2 rounded-xl bg-gradient-to-r from-accent to-accent-light px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-accent/25 hover:shadow-accent/40 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all"
-        >
-            {pending ? (
-                <>
-                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Signing in...
-                </>
-            ) : (
-                'Sign in'
-            )}
-        </button>
     )
 }
