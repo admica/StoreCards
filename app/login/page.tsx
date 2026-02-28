@@ -1,11 +1,12 @@
 'use client'
 
-import { useFormState, useFormStatus } from 'react-dom'
+import { useActionState } from 'react'
+import { useFormStatus } from 'react-dom'
 import { authenticate } from '@/app/lib/actions'
 import Link from 'next/link'
 
 export default function Page() {
-    const [errorMessage, dispatch] = useFormState(authenticate, undefined)
+    const [errorMessage, dispatch, _isPending] = useActionState(authenticate, undefined)
 
     return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">

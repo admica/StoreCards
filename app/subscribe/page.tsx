@@ -1,6 +1,7 @@
 'use client'
 
-import { useFormState, useFormStatus } from 'react-dom'
+import { useActionState } from 'react'
+import { useFormStatus } from 'react-dom'
 import { continueWithFree } from '@/app/lib/actions'
 
 const initialState = {
@@ -23,7 +24,7 @@ function PlanButton({ children, disabled }: { children: React.ReactNode; disable
 }
 
 export default function SubscribePage() {
-    const [state, formAction] = useFormState(continueWithFree, initialState)
+    const [state, formAction, _isPending] = useActionState(continueWithFree, initialState)
 
     return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">

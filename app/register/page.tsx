@@ -1,13 +1,14 @@
 'use client'
 
-import { useFormState, useFormStatus } from 'react-dom'
+import { useActionState } from 'react'
+import { useFormStatus } from 'react-dom'
 import { register } from '@/app/lib/actions'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 
 export default function Page() {
-    const [errorMessage, dispatch] = useFormState(register, undefined)
+    const [errorMessage, dispatch, _isPending] = useActionState(register, undefined)
     const router = useRouter()
     const formRef = useRef<HTMLFormElement>(null)
     const [email, setEmail] = useState('')
