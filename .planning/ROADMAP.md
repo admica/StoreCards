@@ -34,8 +34,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans:** 3 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Fix subscribe redirect loop, image security/cleanup, barcode validation, parallel logos
-- [ ] 01-02-PLAN.md — Rate limiting via proxy.ts, dead code removal, SW script replacement
+- [x] 01-01-PLAN.md — Fix subscribe redirect loop, image security/cleanup, barcode validation, parallel logos
+- [x] 01-02-PLAN.md — Rate limiting via proxy.ts, dead code removal, SW script replacement
 - [ ] 01-03-PLAN.md — Extract barcode scanner hook, deduplicate logo caching, migrate useFormState to useActionState
 
 ### Phase 2: UX Quality and Error Handling
@@ -102,7 +102,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Bug Fixes and Security | 0/3 | Planning complete | - |
+| 1. Bug Fixes and Security | 2/3 | In progress | - |
 | 2. UX Quality and Error Handling | 0/TBD | Not started | - |
 | 3. Performance Cleanup | 0/TBD | Not started | - |
 | 4. Subscription and Account Management | 0/TBD | Not started | - |

@@ -18,16 +18,16 @@ Requirements for production launch. Each maps to roadmap phases.
 ### Security
 
 - [ ] **SEC-01**: File uploads validated server-side via magic bytes + sharp re-encode (not `file.type` header)
-- [ ] **SEC-02**: Rate limiting on login/register endpoints (5 attempts per IP per 15 minutes, in-memory via lru-cache)
+- [x] **SEC-02**: Rate limiting on login/register endpoints (5 attempts per IP per 15 minutes, in-memory via lru-cache)
 - [ ] **SEC-03**: Barcode format validated against allowed enum values before storing in DB
 
 ### Code Quality
 
 - [ ] **QUAL-01**: Barcode scanning logic extracted into shared `useBarcodeScanner` hook (deduplicate add/edit forms)
 - [ ] **QUAL-02**: Brand logo caching extracted into `cacheBrandLogo` helper (deduplicate createCard/updateCard)
-- [ ] **QUAL-03**: Dead code removed: `onboardingComplete` field (schema migration + auth config), empty email verification directories, `extractColorsFromUrl` stub
+- [x] **QUAL-03**: Dead code removed: `onboardingComplete` field (schema migration + auth config), empty email verification directories, `extractColorsFromUrl` stub
 - [ ] **QUAL-04**: `useFormState` migrated to `useActionState` across all forms (React 19 migration)
-- [ ] **QUAL-05**: `dangerouslySetInnerHTML` SW script replaced with `next/script` component
+- [x] **QUAL-05**: `dangerouslySetInnerHTML` SW script replaced with `next/script` component
 
 ### Performance
 
@@ -113,13 +113,13 @@ Deferred to future release. Tracked but not in current roadmap.
 | BUG-04 | Phase 2 | Pending |
 | BUG-05 | Phase 3 | Pending |
 | SEC-01 | Phase 1 | Pending |
-| SEC-02 | Phase 1 | Pending |
+| SEC-02 | Phase 1 | Complete |
 | SEC-03 | Phase 1 | Pending |
 | QUAL-01 | Phase 1 | Pending |
 | QUAL-02 | Phase 1 | Pending |
-| QUAL-03 | Phase 1 | Pending |
+| QUAL-03 | Phase 1 | Complete |
 | QUAL-04 | Phase 1 | Pending |
-| QUAL-05 | Phase 1 | Pending |
+| QUAL-05 | Phase 1 | Complete |
 | PERF-01 | Phase 3 | Pending |
 | PERF-02 | Phase 3 | Pending |
 | PERF-03 | Phase 1 | Pending |
