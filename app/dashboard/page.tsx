@@ -84,7 +84,7 @@ export default async function Dashboard() {
                             href="/add"
                             className="rounded-full bg-gradient-to-r from-accent to-accent-light px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-accent/30 hover:shadow-accent/40 hover:scale-[1.02] transition-all active:scale-95"
                         >
-                            Add First Card
+                            Add your first card
                         </Link>
                     </div>
                 ) : (

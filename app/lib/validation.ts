@@ -19,7 +19,7 @@ export function validateField(
     name: string,
     value: string
 ): string | null {
-    const fieldSchema = schema.shape[name]
+    const fieldSchema = schema.shape[name] as z.ZodTypeAny | undefined
     if (!fieldSchema) return null
 
     const result = fieldSchema.safeParse(value)

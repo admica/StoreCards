@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import Script from 'next/script'
 import './globals.css'
 import BottomNav from './components/BottomNav'
+import { ToasterWithTheme } from './components/ToasterWithTheme'
 import { ThemeProvider } from './providers/theme-provider'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
@@ -58,6 +59,7 @@ export default async function RootLayout({
                 <ThemeProvider initialTheme={initialTheme}>
                     {children}
                     <BottomNav />
+                    <ToasterWithTheme />
                 </ThemeProvider>
                 <Script
                     id="register-sw"
