@@ -2,13 +2,14 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { useActionState } from 'react'
-import { useFormStatus } from 'react-dom'
 import { createCard } from '@/app/lib/actions'
 import { useState, useRef } from 'react'
 import Link from 'next/link'
 
 import LogoPicker from '@/components/logo-picker'
 import { useBarcodeScanner } from '@/app/hooks/useBarcodeScanner'
+import { SubmitButton } from '@/app/components/SubmitButton'
+import { cardSchema, validateField } from '@/app/lib/validation'
 
 export default function AddCardForm({ nerdMode }: { nerdMode: boolean }) {
     const [errorMessage, dispatch, _isPending] = useActionState(createCard, undefined)
@@ -18,6 +19,7 @@ export default function AddCardForm({ nerdMode }: { nerdMode: boolean }) {
     const [selectedColorLight, setSelectedColorLight] = useState<string | null>(null)
     const [selectedColorDark, setSelectedColorDark] = useState<string | null>(null)
     const [isLogoPickerOpen, setIsLogoPickerOpen] = useState(false)
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
     const fileInputRef = useRef<HTMLInputElement>(null)
     const imageFileInputRef = useRef<HTMLInputElement>(null)
 
@@ -26,11 +28,14 @@ export default function AddCardForm({ nerdMode }: { nerdMode: boolean }) {
         detectedFormat,
         isScanning,
         scanStatus,
+        scanErrorType,
         ref,
         setScannedResult,
         setDetectedFormat,
         setIsScanning,
         handleImageUpload: handleBarcodeImageUpload,
+        startScanning,
+        clearScanError,
     } = useBarcodeScanner()
 
     // Auto-open logo picker when retailer name is entered and blurred
@@ -70,23 +75,48 @@ export default function AddCardForm({ nerdMode }: { nerdMode: boolean }) {
                 <div className="mb-6 space-y-3">
                     {isScanning ? (
                         <div>
-                            <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black">
-                                <video ref={ref} className="h-full w-full object-cover" />
-                                <button
-                                    type="button"
-                                    onClick={() => setIsScanning(false)}
-                                    className="absolute top-3 right-3 rounded-full bg-white/90 dark:bg-surface px-4 py-2 text-sm font-medium text-primary hover:bg-white transition-colors"
-                                >
-                                    Close
-                                </button>
-                            </div>
-                            <p className="mt-3 text-center text-sm text-muted">Point camera at barcode</p>
+                            {scanErrorType === 'permission-denied' ? (
+                                <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-error/10 border border-error/20 flex flex-col items-center justify-center gap-3 p-6">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-10 h-10 text-error/60">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 3l18 18" />
+                                    </svg>
+                                    <p className="text-sm font-medium text-primary text-center">Camera access was blocked</p>
+                                    <p className="text-xs text-muted text-center">Allow camera access in your browser settings, then tap &quot;Scan&quot; again</p>
+                                    <button type="button" onClick={() => { clearScanError(); setIsScanning(false) }}
+                                        className="text-sm text-accent hover:text-accent-dark transition-colors">Dismiss</button>
+                                </div>
+                            ) : scanErrorType === 'camera-not-found' ? (
+                                <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-warning/10 border border-warning/20 flex flex-col items-center justify-center gap-3 p-6">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-10 h-10 text-warning/60">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
+                                    </svg>
+                                    <p className="text-sm font-medium text-primary text-center">No camera detected</p>
+                                    <p className="text-xs text-muted text-center">Use &quot;Upload Photo&quot; to scan from an image, or enter the barcode number manually</p>
+                                    <button type="button" onClick={() => { clearScanError(); setIsScanning(false) }}
+                                        className="text-sm text-accent hover:text-accent-dark transition-colors">Dismiss</button>
+                                </div>
+                            ) : (
+                                <div>
+                                    <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black">
+                                        <video ref={ref} className="h-full w-full object-cover" />
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsScanning(false)}
+                                            className="absolute top-3 right-3 rounded-full bg-white/90 dark:bg-surface px-4 py-2 text-sm font-medium text-primary hover:bg-white transition-colors"
+                                        >
+                                            Close
+                                        </button>
+                                    </div>
+                                    <p className="mt-3 text-center text-sm text-muted">Point camera at barcode</p>
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <>
                             <button
                                 type="button"
-                                onClick={() => setIsScanning(true)}
+                                onClick={() => startScanning()}
                                 className="flex w-full items-center justify-center gap-2 rounded-xl border border-border dark:border-border bg-background dark:bg-surface-elevated px-4 py-3 text-sm font-medium text-primary hover:bg-surface dark:hover:bg-border transition-colors"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5 text-accent">
@@ -137,13 +167,17 @@ export default function AddCardForm({ nerdMode }: { nerdMode: boolean }) {
                     </div>
                 )}
 
-                {scanStatus === 'error' && (
+                {scanStatus === 'error' && scanErrorType === 'decode-failure' && (
                     <div className="mb-4 p-3 bg-warning/10 border border-warning/20 rounded-xl">
                         <div className="flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-warning">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5 text-warning flex-shrink-0">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
                             </svg>
-                            <p className="text-sm text-warning font-medium">No barcode found. You can still enter it manually.</p>
+                            <div className="flex-1">
+                                <p className="text-sm text-warning font-medium">No barcode found in this image. Try a clearer photo, or enter the barcode number manually.</p>
+                            </div>
+                            <button type="button" onClick={() => clearScanError()}
+                                className="text-xs text-accent hover:text-accent-dark transition-colors whitespace-nowrap">Try again</button>
                         </div>
                     </div>
                 )}
@@ -186,11 +220,32 @@ export default function AddCardForm({ nerdMode }: { nerdMode: boolean }) {
                             id="retailer"
                             required
                             value={retailerName}
-                            onChange={(e) => setRetailerName(e.target.value)}
-                            onBlur={handleRetailerBlur}
-                            className="block w-full rounded-xl border border-border dark:border-border bg-background dark:bg-surface-elevated px-4 py-3 text-primary placeholder-muted shadow-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20 transition-all text-sm"
+                            onChange={(e) => {
+                                setRetailerName(e.target.value)
+                                if (fieldErrors.retailer) {
+                                    const error = validateField(cardSchema, 'retailer', e.target.value)
+                                    if (!error) setFieldErrors(prev => { const next = { ...prev }; delete next.retailer; return next })
+                                }
+                            }}
+                            onBlur={(e) => {
+                                handleRetailerBlur()
+                                const error = validateField(cardSchema, 'retailer', e.target.value)
+                                if (error) {
+                                    setFieldErrors(prev => ({ ...prev, retailer: error }))
+                                } else {
+                                    setFieldErrors(prev => { const next = { ...prev }; delete next.retailer; return next })
+                                }
+                            }}
+                            className={`block w-full rounded-xl border px-4 py-3 text-primary placeholder-muted shadow-sm focus:outline-none focus:ring-2 transition-all text-sm ${
+                                fieldErrors.retailer
+                                    ? 'border-error focus:border-error focus:ring-error/20 bg-background dark:bg-surface-elevated'
+                                    : 'border-border dark:border-border focus:border-accent focus:ring-accent/20 bg-background dark:bg-surface-elevated'
+                            }`}
                             placeholder="e.g. Starbucks"
                         />
+                        {fieldErrors.retailer && (
+                            <p className="mt-1 text-xs text-error" role="alert">{fieldErrors.retailer}</p>
+                        )}
                         <input type="hidden" name="logo" value={selectedLogo || ''} />
                         <input type="hidden" name="colorLight" value={selectedColorLight || ''} />
                         <input type="hidden" name="colorDark" value={selectedColorDark || ''} />
@@ -273,7 +328,7 @@ export default function AddCardForm({ nerdMode }: { nerdMode: boolean }) {
                     )}
 
                     <div className="pt-2">
-                        <SubmitButton />
+                        <SubmitButton label="Save Card" pendingLabel="Saving..." />
                     </div>
                     <div className="flex h-8 items-center justify-center" aria-live="polite" aria-atomic="true">
                         {errorMessage && (
@@ -288,29 +343,5 @@ export default function AddCardForm({ nerdMode }: { nerdMode: boolean }) {
                 </form>
             </div>
         </div>
-    )
-}
-
-function SubmitButton() {
-    const { pending } = useFormStatus()
-
-    return (
-        <button
-            type="submit"
-            disabled={pending}
-            className="flex w-full justify-center items-center gap-2 rounded-xl bg-gradient-to-r from-accent to-accent-light px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-accent/25 hover:shadow-accent/40 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all"
-        >
-            {pending ? (
-                <>
-                    <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Saving...
-                </>
-            ) : (
-                'Save Card'
-            )}
-        </button>
     )
 }
