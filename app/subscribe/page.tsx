@@ -1,17 +1,10 @@
 'use client'
 
 import { useFormState, useFormStatus } from 'react-dom'
-import { selectPlan } from '@/app/lib/actions'
-import Link from 'next/link'
+import { continueWithFree } from '@/app/lib/actions'
 
-type PlanState = {
-    error?: string
-    success?: string
-}
-
-const initialState: PlanState = {
-    error: undefined,
-    success: undefined,
+const initialState = {
+    error: '',
 }
 
 function PlanButton({ children, disabled }: { children: React.ReactNode; disabled?: boolean }) {
@@ -30,7 +23,7 @@ function PlanButton({ children, disabled }: { children: React.ReactNode; disable
 }
 
 export default function SubscribePage() {
-    const [state, formAction] = useFormState(selectPlan, initialState)
+    const [state, formAction] = useFormState(continueWithFree, initialState)
 
     return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
@@ -40,24 +33,15 @@ export default function SubscribePage() {
             </div>
 
             <div className="relative w-full max-w-3xl space-y-8 rounded-2xl bg-surface dark:bg-surface p-8 card-shadow dark:card-shadow-dark border border-border-light dark:border-border">
-                <div className="flex items-center justify-between flex-wrap gap-3">
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-primary">Choose your plan</h1>
-                        <p className="mt-1 text-sm text-muted">
-                            Start with the Free plan today. Upgrades are coming soon.
-                        </p>
-                    </div>
-                    <Link
-                        href="/dashboard"
-                        className="text-sm font-semibold text-accent hover:text-accent-dark transition-colors"
-                    >
-                        Skip for now
-                    </Link>
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight text-primary">Choose your plan</h1>
+                    <p className="mt-1 text-sm text-muted">
+                        Start with the Free plan today. Upgrades are coming soon.
+                    </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <form action={formAction} className="h-full">
-                        <input type="hidden" name="plan" value="free" />
                         <div className="flex h-full flex-col gap-4 rounded-2xl border border-border-light dark:border-border bg-background dark:bg-surface-elevated p-6 shadow-sm">
                             <div className="space-y-1">
                                 <p className="text-xs font-semibold uppercase tracking-wider text-accent">Free</p>
@@ -70,12 +54,11 @@ export default function SubscribePage() {
                                 <li>• Sync across devices</li>
                                 <li>• Quick barcode access</li>
                             </ul>
-                            <PlanButton>Choose Free</PlanButton>
+                            <PlanButton>Continue with Free</PlanButton>
                         </div>
                     </form>
 
-                    <form action={formAction} className="h-full">
-                        <input type="hidden" name="plan" value="monthly" />
+                    <div className="h-full">
                         <div className="flex h-full flex-col gap-4 rounded-2xl border border-border-light dark:border-border bg-background dark:bg-surface-elevated p-6 shadow-sm">
                             <div className="space-y-1">
                                 <p className="text-xs font-semibold uppercase tracking-wider text-muted">Coming Soon</p>
@@ -88,12 +71,17 @@ export default function SubscribePage() {
                                 <li>• Advanced analytics</li>
                                 <li>• Cloud backups</li>
                             </ul>
-                            <PlanButton disabled>Upgrade soon</PlanButton>
+                            <button
+                                type="button"
+                                disabled
+                                className="w-full rounded-xl bg-gradient-to-r from-accent to-accent-light px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-accent/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            >
+                                Upgrade soon
+                            </button>
                         </div>
-                    </form>
+                    </div>
 
-                    <form action={formAction} className="h-full">
-                        <input type="hidden" name="plan" value="yearly" />
+                    <div className="h-full">
                         <div className="flex h-full flex-col gap-4 rounded-2xl border border-border-light dark:border-border bg-background dark:bg-surface-elevated p-6 shadow-sm">
                             <div className="space-y-1">
                                 <p className="text-xs font-semibold uppercase tracking-wider text-muted">Coming Soon</p>
@@ -106,9 +94,15 @@ export default function SubscribePage() {
                                 <li>• Best value</li>
                                 <li>• Early feature access</li>
                             </ul>
-                            <PlanButton disabled>Upgrade soon</PlanButton>
+                            <button
+                                type="button"
+                                disabled
+                                className="w-full rounded-xl bg-gradient-to-r from-accent to-accent-light px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-accent/25 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                            >
+                                Upgrade soon
+                            </button>
                         </div>
-                    </form>
+                    </div>
                 </div>
 
                 {state?.error && (
@@ -123,4 +117,3 @@ export default function SubscribePage() {
         </div>
     )
 }
-

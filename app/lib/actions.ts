@@ -7,7 +7,9 @@ import { AuthError } from 'next-auth'
 import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { put } from '@vercel/blob'
+import { writeFile, mkdir } from 'fs/promises'
+import { randomUUID } from 'crypto'
+import path from 'path'
 import { SubscriptionStatus, SubscriptionTier } from '@prisma/client'
 
 type ClearbitSuggestion = {
@@ -79,10 +81,16 @@ export async function register(prevState: string | undefined, formData: FormData
 
         // Sign the user in immediately so they can pick a plan
         await signIn('credentials', { redirect: false, email, password })
+
         return 'success'
 
     } catch (error) {
-        console.error('Registration error:', error)
+        if (error instanceof Error) {
+            if (error.message.includes('connect')) {
+                return 'Database connection failed. Please try again.'
+            }
+        }
+
         return 'Failed to create account. Please try again.'
     }
 }
@@ -114,15 +122,22 @@ export async function createCard(prevState: string | undefined, formData: FormDa
         return 'Retailer name is required'
     }
 
+    const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+
     let imagePath = null
     if (imageFile && imageFile.size > 0) {
+        if (imageFile.size > MAX_FILE_SIZE) {
+            return 'Image must be under 5MB'
+        }
         try {
-            const blob = await put(imageFile.name, imageFile, {
-                access: 'public',
-            })
-            imagePath = blob.url
-        } catch (error) {
-            console.error('Image upload failed:', error)
+            const ext = path.extname(imageFile.name) || '.jpg'
+            const filename = `${randomUUID()}${ext}`
+            const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
+            await mkdir(uploadsDir, { recursive: true })
+            const buffer = Buffer.from(await imageFile.arrayBuffer())
+            await writeFile(path.join(uploadsDir, filename), buffer)
+            imagePath = `/uploads/${filename}`
+        } catch {
             // Continue without image rather than failing completely
         }
     }
@@ -162,8 +177,8 @@ export async function createCard(prevState: string | undefined, formData: FormDa
                     colorDark: colorDark || null,
                 }
             })
-        } catch (e) {
-            console.error('Failed to cache logo:', e)
+        } catch {
+            // Logo caching is best-effort
         }
     }
 
@@ -215,15 +230,22 @@ export async function updateCard(id: string, prevState: string | undefined, form
         return 'Card not found or unauthorized'
     }
 
+    const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+
     let imagePath = existingCard.image
     if (imageFile && imageFile.size > 0) {
+        if (imageFile.size > MAX_FILE_SIZE) {
+            return 'Image must be under 5MB'
+        }
         try {
-            const blob = await put(imageFile.name, imageFile, {
-                access: 'public',
-            })
-            imagePath = blob.url
-        } catch (error) {
-            console.error('Image upload failed:', error)
+            const ext = path.extname(imageFile.name) || '.jpg'
+            const filename = `${randomUUID()}${ext}`
+            const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
+            await mkdir(uploadsDir, { recursive: true })
+            const buffer = Buffer.from(await imageFile.arrayBuffer())
+            await writeFile(path.join(uploadsDir, filename), buffer)
+            imagePath = `/uploads/${filename}`
+        } catch {
             // Keep existing image if new upload fails
         }
     }
@@ -263,8 +285,8 @@ export async function updateCard(id: string, prevState: string | undefined, form
                     colorDark: colorDark || null,
                 }
             })
-        } catch (e) {
-            console.error('Failed to cache logo:', e)
+        } catch {
+            // Logo caching is best-effort
         }
     }
 
@@ -318,20 +340,10 @@ export async function updateDarkMode(enabled: boolean) {
     revalidatePath('/')
 }
 
-type PlanState = {
-    error?: string
-    success?: string
-}
-
-export async function selectPlan(prevState: PlanState | undefined, formData: FormData) {
+export async function continueWithFree(_prevState: { error: string }): Promise<{ error: string }> {
     const session = await auth()
     if (!session?.user?.email) {
         return { error: 'Not authenticated' }
-    }
-
-    const plan = (formData.get('plan') as string | null)?.toLowerCase()
-    if (!plan) {
-        return { error: 'Plan is required' }
     }
 
     const user = await prisma.user.findUnique({
@@ -341,10 +353,6 @@ export async function selectPlan(prevState: PlanState | undefined, formData: For
 
     if (!user) {
         return { error: 'User not found' }
-    }
-
-    if (plan !== 'free') {
-        return { error: 'Paid plans are coming soon. Choose the Free plan for now.' }
     }
 
     await prisma.subscription.upsert({
@@ -427,8 +435,8 @@ export async function searchLogos(query: string) {
                 }
             })
         }
-    } catch (error) {
-        console.error('Clearbit search failed:', error)
+    } catch {
+        // Clearbit is best-effort
     }
 
     // 4. Call logo.dev API if not in cache (or even if in cache, to offer more options)
@@ -456,8 +464,8 @@ export async function searchLogos(query: string) {
                     }
                 })
             }
-        } catch (error) {
-            console.error('Logo.dev search failed:', error)
+        } catch {
+            // Logo.dev is best-effort
         }
     }
 
