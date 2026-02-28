@@ -1,26 +1,11 @@
 'use client'
 
 import { useActionState } from 'react'
-import { useFormStatus } from 'react-dom'
 import { continueWithFree } from '@/app/lib/actions'
+import { SubmitButton } from '@/app/components/SubmitButton'
 
 const initialState = {
     error: '',
-}
-
-function PlanButton({ children, disabled }: { children: React.ReactNode; disabled?: boolean }) {
-    const { pending } = useFormStatus()
-    const isDisabled = disabled || pending
-
-    return (
-        <button
-            type="submit"
-            disabled={isDisabled}
-            className="w-full rounded-xl bg-gradient-to-r from-accent to-accent-light px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-accent/25 hover:shadow-accent/40 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all"
-        >
-            {pending ? 'Saving...' : children}
-        </button>
-    )
 }
 
 export default function SubscribePage() {
@@ -55,7 +40,7 @@ export default function SubscribePage() {
                                 <li>• Sync across devices</li>
                                 <li>• Quick barcode access</li>
                             </ul>
-                            <PlanButton>Continue with Free</PlanButton>
+                            <SubmitButton label="Continue with Free" pendingLabel="Saving..." />
                         </div>
                     </form>
 
