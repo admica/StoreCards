@@ -48,7 +48,7 @@ Plans:
   3. A user with no cards sees an illustration and "Add your first card" call-to-action instead of an empty screen
   4. Every form (register, login, add card, edit card) shows field-level errors immediately after leaving an invalid field
   5. Buttons that trigger Server Actions show a spinner or "Saving..." while the action is in flight
-**Plans:** 3 plans
+**Plans:** 2/3 plans executed
 
 Plans:
 - [ ] 02-01-PLAN.md — Foundation: sonner install, shared SubmitButton, validation schemas, Barcode error fallback, empty state
@@ -108,7 +108,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Bug Fixes and Security | 3/3 | Complete   | 2026-02-28 |
-| 2. UX Quality and Error Handling | 0/3 | Planning complete | - |
+| 2. UX Quality and Error Handling | 2/3 | In Progress|  |
 | 3. Performance Cleanup | 0/TBD | Not started | - |
 | 4. Subscription and Account Management | 0/TBD | Not started | - |
 | 5. PWA Offline Support | 0/TBD | Not started | - |
