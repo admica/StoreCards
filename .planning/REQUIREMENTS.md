@@ -9,17 +9,17 @@ Requirements for production launch. Each maps to roadmap phases.
 
 ### Bug Fixes
 
-- [ ] **BUG-01**: "Skip for now" on subscribe page sets `subscriptionSelected = true` and redirects to dashboard (currently infinite redirect loop)
-- [ ] **BUG-02**: Uploaded images deleted from disk when card is deleted (`fs.unlink` the file in `public/uploads/`)
-- [ ] **BUG-03**: Old image file cleaned up when card image is replaced via update
+- [x] **BUG-01**: "Skip for now" on subscribe page sets `subscriptionSelected = true` and redirects to dashboard (currently infinite redirect loop)
+- [x] **BUG-02**: Uploaded images deleted from disk when card is deleted (`fs.unlink` the file in `public/uploads/`)
+- [x] **BUG-03**: Old image file cleaned up when card image is replaced via update
 - [ ] **BUG-04**: Barcode component shows error state instead of blank when bwip-js render fails (fallback: raw number + copy button)
 - [ ] **BUG-05**: JWT callback only refreshes subscription data on `trigger === 'update'`, not on every request
 
 ### Security
 
-- [ ] **SEC-01**: File uploads validated server-side via magic bytes + sharp re-encode (not `file.type` header)
+- [x] **SEC-01**: File uploads validated server-side via magic bytes + sharp re-encode (not `file.type` header)
 - [x] **SEC-02**: Rate limiting on login/register endpoints (5 attempts per IP per 15 minutes, in-memory via lru-cache)
-- [ ] **SEC-03**: Barcode format validated against allowed enum values before storing in DB
+- [x] **SEC-03**: Barcode format validated against allowed enum values before storing in DB
 
 ### Code Quality
 
@@ -33,7 +33,7 @@ Requirements for production launch. Each maps to roadmap phases.
 
 - [ ] **PERF-01**: Theme preference stored in cookie; root layout reads via `cookies()` with no DB query
 - [ ] **PERF-02**: Theme toggle writes cookie via Server Action; DB `darkMode` field kept as fallback for first login only
-- [ ] **PERF-03**: Logo search runs Clearbit + logo.dev in parallel via `Promise.all` (currently sequential)
+- [x] **PERF-03**: Logo search runs Clearbit + logo.dev in parallel via `Promise.all` (currently sequential)
 
 ### UX Polish
 
@@ -107,14 +107,14 @@ Deferred to future release. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BUG-01 | Phase 1 | Pending |
-| BUG-02 | Phase 1 | Pending |
-| BUG-03 | Phase 1 | Pending |
+| BUG-01 | Phase 1 | Complete |
+| BUG-02 | Phase 1 | Complete |
+| BUG-03 | Phase 1 | Complete |
 | BUG-04 | Phase 2 | Pending |
 | BUG-05 | Phase 3 | Pending |
-| SEC-01 | Phase 1 | Pending |
+| SEC-01 | Phase 1 | Complete |
 | SEC-02 | Phase 1 | Complete |
-| SEC-03 | Phase 1 | Pending |
+| SEC-03 | Phase 1 | Complete |
 | QUAL-01 | Phase 1 | Pending |
 | QUAL-02 | Phase 1 | Pending |
 | QUAL-03 | Phase 1 | Complete |
@@ -122,7 +122,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | QUAL-05 | Phase 1 | Complete |
 | PERF-01 | Phase 3 | Pending |
 | PERF-02 | Phase 3 | Pending |
-| PERF-03 | Phase 1 | Pending |
+| PERF-03 | Phase 1 | Complete |
 | UX-01 | Phase 2 | Pending |
 | UX-02 | Phase 2 | Pending |
 | UX-03 | Phase 2 | Pending |

@@ -31,7 +31,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Replacing a card image removes the old file from disk
   4. An attacker who uploads a file with a fake image Content-Type header cannot store non-image content in public/uploads/
   5. Logging in with wrong credentials 6+ times within 15 minutes returns an error rather than allowing unlimited attempts
-**Plans:** 3 plans
+**Plans:** 2/3 plans executed
 
 Plans:
 - [x] 01-01-PLAN.md — Fix subscribe redirect loop, image security/cleanup, barcode validation, parallel logos
@@ -102,7 +102,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Bug Fixes and Security | 2/3 | In progress | - |
+| 1. Bug Fixes and Security | 2/3 | In Progress|  |
 | 2. UX Quality and Error Handling | 0/TBD | Not started | - |
 | 3. Performance Cleanup | 0/TBD | Not started | - |
 | 4. Subscription and Account Management | 0/TBD | Not started | - |

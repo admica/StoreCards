@@ -44,6 +44,9 @@ Recent decisions affecting current work:
 
 - [Roadmap]: PWA offline is Phase 5 (not Phase 1) — service worker precaches compiled output so the app shell must be stable first
 - [Roadmap]: Phase 3 and Phase 6 can both start after Phase 4 completes (parallel-capable); Phase 5 also depends only on Phase 4
+- [01-01]: continueWithFree takes _prevState for useFormState compatibility; QUAL-04 in Plan 03 handles migration to useActionState
+- [01-01]: Image re-encoding always produces .webp — consistent extension, better compression
+- [01-01]: Barcode format allowlist normalizes to lowercase for consistent DB storage
 - [01-02]: proxy.ts uses named export (not default) per Next.js 16 middleware convention; replaces middleware.ts
 - [01-02]: Rate limit mutates count in place to avoid resetting TTL — anchors window to first attempt
 - [01-02]: eslint-disable used for auth() cast in proxy.ts — NextAuth overload resolution requires it
