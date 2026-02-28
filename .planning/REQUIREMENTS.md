@@ -23,10 +23,10 @@ Requirements for production launch. Each maps to roadmap phases.
 
 ### Code Quality
 
-- [ ] **QUAL-01**: Barcode scanning logic extracted into shared `useBarcodeScanner` hook (deduplicate add/edit forms)
-- [ ] **QUAL-02**: Brand logo caching extracted into `cacheBrandLogo` helper (deduplicate createCard/updateCard)
+- [x] **QUAL-01**: Barcode scanning logic extracted into shared `useBarcodeScanner` hook (deduplicate add/edit forms)
+- [x] **QUAL-02**: Brand logo caching extracted into `cacheBrandLogo` helper (deduplicate createCard/updateCard)
 - [x] **QUAL-03**: Dead code removed: `onboardingComplete` field (schema migration + auth config), empty email verification directories, `extractColorsFromUrl` stub
-- [ ] **QUAL-04**: `useFormState` migrated to `useActionState` across all forms (React 19 migration)
+- [x] **QUAL-04**: `useFormState` migrated to `useActionState` across all forms (React 19 migration)
 - [x] **QUAL-05**: `dangerouslySetInnerHTML` SW script replaced with `next/script` component
 
 ### Performance
@@ -115,10 +115,10 @@ Deferred to future release. Tracked but not in current roadmap.
 | SEC-01 | Phase 1 | Complete |
 | SEC-02 | Phase 1 | Complete |
 | SEC-03 | Phase 1 | Complete |
-| QUAL-01 | Phase 1 | Pending |
-| QUAL-02 | Phase 1 | Pending |
+| QUAL-01 | Phase 1 | Complete |
+| QUAL-02 | Phase 1 | Complete |
 | QUAL-03 | Phase 1 | Complete |
-| QUAL-04 | Phase 1 | Pending |
+| QUAL-04 | Phase 1 | Complete |
 | QUAL-05 | Phase 1 | Complete |
 | PERF-01 | Phase 3 | Pending |
 | PERF-02 | Phase 3 | Pending |
