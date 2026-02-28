@@ -7,17 +7,21 @@ import { useZxing } from 'react-zxing'
 import { preprocessImage, getRotatedCanvases } from '@/app/lib/image-utils'
 
 export type ScanStatus = 'idle' | 'scanning' | 'success' | 'error'
+export type ScanErrorType = 'permission-denied' | 'camera-not-found' | 'decode-failure' | null
 
 export interface UseBarcodeScanner {
     scannedResult: string
     detectedFormat: string
     isScanning: boolean
     scanStatus: ScanStatus
+    scanErrorType: ScanErrorType
     ref: React.RefObject<HTMLVideoElement | null>
     setScannedResult: (value: string) => void
     setDetectedFormat: (value: string) => void
     setIsScanning: (value: boolean) => void
     handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>
+    startScanning: () => Promise<void>
+    clearScanError: () => void
 }
 
 // Map ZXing format to our format strings
@@ -48,6 +52,7 @@ export function useBarcodeScanner({
     const [detectedFormat, setDetectedFormat] = useState(initialBarcodeFormat)
     const [isScanning, setIsScanning] = useState(false)
     const [scanStatus, setScanStatus] = useState<ScanStatus>('idle')
+    const [scanErrorType, setScanErrorType] = useState<ScanErrorType>(null)
 
     const { ref } = useZxing({
         onResult(result) {
@@ -55,8 +60,42 @@ export function useBarcodeScanner({
             setDetectedFormat(mapBarcodeFormat(result.getBarcodeFormat()))
             setIsScanning(false)
         },
+        onError(error) {
+            if (error.name === 'NotAllowedError') {
+                setScanErrorType('permission-denied')
+                setScanStatus('error')
+                setIsScanning(false)
+            } else if (error.name === 'NotFoundError') {
+                setScanErrorType('camera-not-found')
+                setScanStatus('error')
+                setIsScanning(false)
+            }
+            // Other errors (decode errors during live scan) are normal — don't change state
+        },
         paused: !isScanning,
     })
+
+    // Proactively check camera permission before starting scanning
+    const startScanning = async () => {
+        try {
+            const permission = await navigator.permissions.query({ name: 'camera' as PermissionName })
+            if (permission.state === 'denied') {
+                setScanErrorType('permission-denied')
+                setScanStatus('error')
+                return
+            }
+        } catch {
+            // permissions.query not supported — fall through to useZxing
+        }
+        setScanErrorType(null)
+        setScanStatus('idle')
+        setIsScanning(true)
+    }
+
+    const clearScanError = () => {
+        setScanErrorType(null)
+        setScanStatus('idle')
+    }
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
@@ -135,6 +174,7 @@ export function useBarcodeScanner({
             setScanStatus('success')
         } catch (error) {
             console.error('Barcode detection failed:', error)
+            setScanErrorType('decode-failure')
             setScanStatus('error')
             // User can still manually enter barcode
         }
@@ -145,10 +185,13 @@ export function useBarcodeScanner({
         detectedFormat,
         isScanning,
         scanStatus,
+        scanErrorType,
         ref,
         setScannedResult,
         setDetectedFormat,
         setIsScanning,
         handleImageUpload,
+        startScanning,
+        clearScanError,
     }
 }
