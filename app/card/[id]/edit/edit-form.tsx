@@ -1,15 +1,13 @@
 'use client'
 /* eslint-disable @next/next/no-img-element */
 
-import { BrowserMultiFormatReader, BarcodeFormat } from '@zxing/browser'
-import { DecodeHintType } from '@zxing/library'
-import { useFormState, useFormStatus } from 'react-dom'
+import { useActionState } from 'react'
+import { useFormStatus } from 'react-dom'
 import { updateCard } from '@/app/lib/actions'
-import { useState, useRef } from 'react'
-import { useZxing } from 'react-zxing'
+import { useState } from 'react'
 
 import LogoPicker from '@/components/logo-picker'
-import { preprocessImage, getRotatedCanvases } from '@/app/lib/image-utils'
+import { useBarcodeScanner } from '@/app/hooks/useBarcodeScanner'
 
 type CardForEdit = {
     id: string
@@ -25,44 +23,30 @@ type CardForEdit = {
 
 export default function EditCardForm({ card, nerdMode }: { card: CardForEdit; nerdMode: boolean }) {
     const updateCardWithId = updateCard.bind(null, card.id)
-    const [errorMessage, dispatch] = useFormState(updateCardWithId, undefined)
-    const [scannedResult, setScannedResult] = useState(card.barcodeValue || '')
-    const [detectedFormat, setDetectedFormat] = useState(card.barcodeFormat || 'code128')
-    const [isScanning, setIsScanning] = useState(false)
+    const [errorMessage, dispatch, _isPending] = useActionState(updateCardWithId, undefined)
     const [imagePreview, setImagePreview] = useState<string | null>(null)
-    const [scanStatus, setScanStatus] = useState<'idle' | 'scanning' | 'success' | 'error'>('idle')
     const [retailerName, setRetailerName] = useState(card.retailer || '')
     const [selectedLogo, setSelectedLogo] = useState<string | null>(card.logo || null)
     const [selectedColorLight, setSelectedColorLight] = useState<string | null>(card.colorLight || null)
     const [selectedColorDark, setSelectedColorDark] = useState<string | null>(card.colorDark || null)
     const [isLogoPickerOpen, setIsLogoPickerOpen] = useState(false)
-    const fileInputRef = useRef<HTMLInputElement>(null)
 
-    const { ref } = useZxing({
-        onResult(result) {
-            setScannedResult(result.getText())
-            setDetectedFormat(mapBarcodeFormat(result.getBarcodeFormat()))
-            setIsScanning(false)
-        },
-        paused: !isScanning,
+    const {
+        scannedResult,
+        detectedFormat,
+        isScanning,
+        scanStatus,
+        ref,
+        setScannedResult,
+        setDetectedFormat,
+        setIsScanning,
+        handleImageUpload: handleBarcodeImageUpload,
+    } = useBarcodeScanner({
+        initialBarcodeValue: card.barcodeValue || '',
+        initialBarcodeFormat: card.barcodeFormat || 'code128',
     })
 
-    // Map ZXing format to our format strings
-    const mapBarcodeFormat = (format: BarcodeFormat): string => {
-        const formatMap: Record<number, string> = {
-            [BarcodeFormat.CODE_128]: 'code128',
-            [BarcodeFormat.EAN_13]: 'ean13',
-            [BarcodeFormat.UPC_A]: 'upca',
-            [BarcodeFormat.QR_CODE]: 'qrcode',
-            [BarcodeFormat.PDF_417]: 'pdf417',
-            [BarcodeFormat.DATA_MATRIX]: 'datamatrix',
-            [BarcodeFormat.AZTEC]: 'aztec',
-            [BarcodeFormat.CODE_39]: 'code39',
-        }
-        return formatMap[format] || 'code128'
-    }
-
-    // Handle image upload and barcode scanning
+    // Handle image upload: show preview and scan for barcode
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (!file) return
@@ -74,80 +58,8 @@ export default function EditCardForm({ card, nerdMode }: { card: CardForEdit; ne
         }
         reader.readAsDataURL(file)
 
-        // Scan for barcode with TRY_HARDER mode for better detection
-        setScanStatus('scanning')
-        try {
-            const hints = new Map()
-            hints.set(DecodeHintType.TRY_HARDER, true)
-            
-            const codeReader = new BrowserMultiFormatReader(hints)
-            
-            let result
-            let foundBarcode = false
-            
-            // Method 1: Use preprocessed canvas with EXIF orientation handling
-            try {
-                const canvas = await preprocessImage(file)
-                result = codeReader.decodeFromCanvas(canvas)
-                foundBarcode = true
-            } catch {
-                console.log('Initial canvas decode failed, trying rotations...')
-            }
-            
-            // Method 2: Try different rotations (fallback for EXIF edge cases)
-            if (!foundBarcode) {
-                try {
-                    const canvas = await preprocessImage(file)
-                    const rotatedCanvases = getRotatedCanvases(canvas)
-                    
-                    for (let i = 0; i < rotatedCanvases.length; i++) {
-                        try {
-                            result = codeReader.decodeFromCanvas(rotatedCanvases[i])
-                            console.log(`Found barcode at rotation ${i * 90}°`)
-                            foundBarcode = true
-                            break
-                        } catch {
-                            // Try next rotation
-                        }
-                    }
-                } catch (e) {
-                    console.log('Rotation attempts failed:', e)
-                }
-            }
-            
-            // Method 3: Try decoding directly from image element as last resort
-            if (!foundBarcode) {
-                console.log('Trying direct image element decode...')
-                const imgElement = document.createElement('img')
-                const imgUrl = URL.createObjectURL(file)
-                imgElement.src = imgUrl
-                
-                await new Promise<void>((resolve, reject) => {
-                    imgElement.onload = () => resolve()
-                    imgElement.onerror = () => reject(new Error('Failed to load image'))
-                })
-                
-                try {
-                    result = await codeReader.decodeFromImageElement(imgElement)
-                    foundBarcode = true
-                } finally {
-                    URL.revokeObjectURL(imgUrl)
-                }
-            }
-
-            if (!foundBarcode || !result) {
-                throw new Error('No barcode found in image')
-            }
-
-            // Success! Found a barcode
-            setScannedResult(result.getText())
-            setDetectedFormat(mapBarcodeFormat(result.getBarcodeFormat()))
-            setScanStatus('success')
-        } catch (error) {
-            console.error('Barcode detection failed:', error)
-            setScanStatus('error')
-            // User can still manually enter barcode
-        }
+        // Delegate barcode scanning to the hook
+        await handleBarcodeImageUpload(e)
     }
 
     return (
@@ -184,7 +96,13 @@ export default function EditCardForm({ card, nerdMode }: { card: CardForEdit; ne
 
                         <button
                             type="button"
-                            onClick={() => fileInputRef.current?.click()}
+                            onClick={() => {
+                                const input = document.createElement('input')
+                                input.type = 'file'
+                                input.accept = 'image/*'
+                                input.onchange = (ev) => handleImageUpload(ev as unknown as React.ChangeEvent<HTMLInputElement>)
+                                input.click()
+                            }}
                             className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border dark:border-border bg-background dark:bg-surface-elevated px-4 py-4 text-sm font-medium text-primary hover:border-accent dark:hover:border-accent transition-colors"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-5 w-5 text-accent">
@@ -192,13 +110,6 @@ export default function EditCardForm({ card, nerdMode }: { card: CardForEdit; ne
                             </svg>
                             Upload Photo to Scan Barcode
                         </button>
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                            className="hidden"
-                        />
                     </>
                 )}
             </div>

@@ -42,6 +42,30 @@ function validateBarcodeFormat(format: string | null | undefined): string | null
         : null
 }
 
+async function cacheBrandLogo(retailer: string, logo: string, colorLight?: string | null, colorDark?: string | null) {
+    const normalizedName = retailer.toLowerCase().trim()
+        .replace(/\s+(store|inc|llc|ltd|corp|corporation)$/g, '')
+        .trim()
+    try {
+        await prisma.brandLogo.upsert({
+            where: { name: normalizedName },
+            update: {
+                logoUrl: logo,
+                ...(colorLight ? { colorLight } : {}),
+                ...(colorDark ? { colorDark } : {}),
+            },
+            create: {
+                name: normalizedName,
+                logoUrl: logo,
+                colorLight: colorLight || null,
+                colorDark: colorDark || null,
+            }
+        })
+    } catch {
+        // Logo caching is best-effort
+    }
+}
+
 type ClearbitSuggestion = {
     name: string
     domain: string
@@ -193,28 +217,7 @@ export async function createCard(prevState: string | undefined, formData: FormDa
 
     // Cache logo and colors if provided
     if (logo) {
-        const normalizedName = retailer.toLowerCase().trim()
-            .replace(/\s+(store|inc|llc|ltd|corp|corporation)$/g, '')
-            .trim()
-
-        try {
-            await prisma.brandLogo.upsert({
-                where: { name: normalizedName },
-                update: {
-                    logoUrl: logo,
-                    ...(colorLight ? { colorLight } : {}),
-                    ...(colorDark ? { colorDark } : {}),
-                },
-                create: {
-                    name: normalizedName,
-                    logoUrl: logo,
-                    colorLight: colorLight || null,
-                    colorDark: colorDark || null,
-                }
-            })
-        } catch {
-            // Logo caching is best-effort
-        }
+        await cacheBrandLogo(retailer, logo, colorLight, colorDark)
     }
 
     revalidatePath('/dashboard')
@@ -315,28 +318,7 @@ export async function updateCard(id: string, prevState: string | undefined, form
 
     // Cache logo and colors if provided
     if (logo) {
-        const normalizedName = retailer.toLowerCase().trim()
-            .replace(/\s+(store|inc|llc|ltd|corp|corporation)$/g, '')
-            .trim()
-
-        try {
-            await prisma.brandLogo.upsert({
-                where: { name: normalizedName },
-                update: {
-                    logoUrl: logo,
-                    ...(colorLight ? { colorLight } : {}),
-                    ...(colorDark ? { colorDark } : {}),
-                },
-                create: {
-                    name: normalizedName,
-                    logoUrl: logo,
-                    colorLight: colorLight || null,
-                    colorDark: colorDark || null,
-                }
-            })
-        } catch {
-            // Logo caching is best-effort
-        }
+        await cacheBrandLogo(retailer, logo, colorLight, colorDark)
     }
 
     revalidatePath('/dashboard')

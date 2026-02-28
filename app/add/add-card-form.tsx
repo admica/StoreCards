@@ -1,24 +1,18 @@
 'use client'
 /* eslint-disable @next/next/no-img-element */
 
-import { BrowserMultiFormatReader, BarcodeFormat } from '@zxing/browser'
-import { DecodeHintType } from '@zxing/library'
-import { useFormState, useFormStatus } from 'react-dom'
+import { useActionState } from 'react'
+import { useFormStatus } from 'react-dom'
 import { createCard } from '@/app/lib/actions'
 import { useState, useRef } from 'react'
 import Link from 'next/link'
-import { useZxing } from 'react-zxing'
 
 import LogoPicker from '@/components/logo-picker'
-import { preprocessImage, getRotatedCanvases } from '@/app/lib/image-utils'
+import { useBarcodeScanner } from '@/app/hooks/useBarcodeScanner'
 
 export default function AddCardForm({ nerdMode }: { nerdMode: boolean }) {
-    const [errorMessage, dispatch] = useFormState(createCard, undefined)
-    const [scannedResult, setScannedResult] = useState('')
-    const [detectedFormat, setDetectedFormat] = useState('code128')
-    const [isScanning, setIsScanning] = useState(false)
+    const [errorMessage, dispatch, _isPending] = useActionState(createCard, undefined)
     const [imagePreview, setImagePreview] = useState<string | null>(null)
-    const [scanStatus, setScanStatus] = useState<'idle' | 'scanning' | 'success' | 'error'>('idle')
     const [retailerName, setRetailerName] = useState('')
     const [selectedLogo, setSelectedLogo] = useState<string | null>(null)
     const [selectedColorLight, setSelectedColorLight] = useState<string | null>(null)
@@ -27,14 +21,17 @@ export default function AddCardForm({ nerdMode }: { nerdMode: boolean }) {
     const fileInputRef = useRef<HTMLInputElement>(null)
     const imageFileInputRef = useRef<HTMLInputElement>(null)
 
-    const { ref } = useZxing({
-        onResult(result) {
-            setScannedResult(result.getText())
-            setDetectedFormat(mapBarcodeFormat(result.getBarcodeFormat()))
-            setIsScanning(false)
-        },
-        paused: !isScanning,
-    })
+    const {
+        scannedResult,
+        detectedFormat,
+        isScanning,
+        scanStatus,
+        ref,
+        setScannedResult,
+        setDetectedFormat,
+        setIsScanning,
+        handleImageUpload: handleBarcodeImageUpload,
+    } = useBarcodeScanner()
 
     // Auto-open logo picker when retailer name is entered and blurred
     const handleRetailerBlur = () => {
@@ -43,22 +40,7 @@ export default function AddCardForm({ nerdMode }: { nerdMode: boolean }) {
         }
     }
 
-    // Map ZXing format to our format strings
-    const mapBarcodeFormat = (format: BarcodeFormat): string => {
-        const formatMap: Record<number, string> = {
-            [BarcodeFormat.CODE_128]: 'code128',
-            [BarcodeFormat.EAN_13]: 'ean13',
-            [BarcodeFormat.UPC_A]: 'upca',
-            [BarcodeFormat.QR_CODE]: 'qrcode',
-            [BarcodeFormat.PDF_417]: 'pdf417',
-            [BarcodeFormat.DATA_MATRIX]: 'datamatrix',
-            [BarcodeFormat.AZTEC]: 'aztec',
-            [BarcodeFormat.CODE_39]: 'code39',
-        }
-        return formatMap[format] || 'code128'
-    }
-
-    // Handle image upload and barcode scanning
+    // Handle image upload: show preview and scan for barcode
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (!file) return
@@ -70,82 +52,8 @@ export default function AddCardForm({ nerdMode }: { nerdMode: boolean }) {
         }
         reader.readAsDataURL(file)
 
-        // Scan for barcode with TRY_HARDER mode for better detection
-        setScanStatus('scanning')
-        try {
-            const hints = new Map()
-            hints.set(DecodeHintType.TRY_HARDER, true)
-            
-            const codeReader = new BrowserMultiFormatReader(hints)
-            
-            let result
-            let foundBarcode = false
-            
-            // Method 1: Use preprocessed canvas with EXIF orientation handling
-            // This should work for most mobile photos now
-            try {
-                const canvas = await preprocessImage(file)
-                result = codeReader.decodeFromCanvas(canvas)
-                foundBarcode = true
-            } catch {
-                console.log('Initial canvas decode failed, trying rotations...')
-            }
-            
-            // Method 2: Try different rotations (in case EXIF handling didn't work)
-            // This is a fallback for edge cases where the barcode might be rotated
-            if (!foundBarcode) {
-                try {
-                    const canvas = await preprocessImage(file)
-                    const rotatedCanvases = getRotatedCanvases(canvas)
-                    
-                    for (let i = 0; i < rotatedCanvases.length; i++) {
-                        try {
-                            result = codeReader.decodeFromCanvas(rotatedCanvases[i])
-                            console.log(`Found barcode at rotation ${i * 90}°`)
-                            foundBarcode = true
-                            break
-                        } catch {
-                            // Try next rotation
-                        }
-                    }
-                } catch (e) {
-                    console.log('Rotation attempts failed:', e)
-                }
-            }
-            
-            // Method 3: Try decoding directly from image element as last resort
-            if (!foundBarcode) {
-                console.log('Trying direct image element decode...')
-                const imgElement = document.createElement('img')
-                const imgUrl = URL.createObjectURL(file)
-                imgElement.src = imgUrl
-                
-                await new Promise<void>((resolve, reject) => {
-                    imgElement.onload = () => resolve()
-                    imgElement.onerror = () => reject(new Error('Failed to load image'))
-                })
-                
-                try {
-                    result = await codeReader.decodeFromImageElement(imgElement)
-                    foundBarcode = true
-                } finally {
-                    URL.revokeObjectURL(imgUrl)
-                }
-            }
-
-            if (!foundBarcode || !result) {
-                throw new Error('No barcode found in image')
-            }
-
-            // Success! Found a barcode
-            setScannedResult(result.getText())
-            setDetectedFormat(mapBarcodeFormat(result.getBarcodeFormat()))
-            setScanStatus('success')
-        } catch (error) {
-            console.error('Barcode detection failed:', error)
-            setScanStatus('error')
-            // User can still manually enter barcode
-        }
+        // Delegate barcode scanning to the hook
+        await handleBarcodeImageUpload(e)
     }
 
     return (
