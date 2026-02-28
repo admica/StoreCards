@@ -7,10 +7,40 @@ import { AuthError } from 'next-auth'
 import { z } from 'zod'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { writeFile, mkdir } from 'fs/promises'
+import { writeFile, mkdir, unlink } from 'fs/promises'
 import { randomUUID } from 'crypto'
 import path from 'path'
 import { SubscriptionStatus, SubscriptionTier } from '@prisma/client'
+import sharp from 'sharp'
+
+const ALLOWED_IMAGE_FORMATS = ['jpeg', 'png', 'webp'] as const
+
+async function processUploadedImage(buffer: Buffer): Promise<Buffer> {
+    let metadata
+    try {
+        metadata = await sharp(buffer).metadata()
+    } catch {
+        throw new Error('Only JPG, PNG, and WebP images are accepted.')
+    }
+    if (!metadata.format || !ALLOWED_IMAGE_FORMATS.includes(metadata.format as typeof ALLOWED_IMAGE_FORMATS[number])) {
+        throw new Error('Only JPG, PNG, and WebP images are accepted.')
+    }
+    return sharp(buffer)
+        .resize(800, 800, { fit: 'inside', withoutEnlargement: true })
+        .webp({ quality: 80 })
+        .toBuffer()
+}
+
+const ALLOWED_BARCODE_FORMATS = [
+    'code128', 'ean13', 'upca', 'qrcode', 'pdf417', 'datamatrix', 'aztec', 'code39'
+] as const
+
+function validateBarcodeFormat(format: string | null | undefined): string | null {
+    if (!format) return null
+    return (ALLOWED_BARCODE_FORMATS as readonly string[]).includes(format.toLowerCase())
+        ? format.toLowerCase()
+        : null
+}
 
 type ClearbitSuggestion = {
     name: string
@@ -124,21 +154,26 @@ export async function createCard(prevState: string | undefined, formData: FormDa
 
     const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 
+    const validatedFormat = validateBarcodeFormat(barcodeFormat)
+
     let imagePath = null
     if (imageFile && imageFile.size > 0) {
         if (imageFile.size > MAX_FILE_SIZE) {
             return 'Image must be under 5MB'
         }
         try {
-            const ext = path.extname(imageFile.name) || '.jpg'
-            const filename = `${randomUUID()}${ext}`
+            const rawBuffer = Buffer.from(await imageFile.arrayBuffer())
+            const processedBuffer = await processUploadedImage(rawBuffer)
+            const filename = `${randomUUID()}.webp`
             const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
             await mkdir(uploadsDir, { recursive: true })
-            const buffer = Buffer.from(await imageFile.arrayBuffer())
-            await writeFile(path.join(uploadsDir, filename), buffer)
+            await writeFile(path.join(uploadsDir, filename), processedBuffer)
             imagePath = `/uploads/${filename}`
-        } catch {
-            // Continue without image rather than failing completely
+        } catch (err) {
+            if (err instanceof Error && err.message.includes('Only JPG')) {
+                return err.message
+            }
+            // Continue without image for other errors rather than failing completely
         }
     }
 
@@ -146,7 +181,7 @@ export async function createCard(prevState: string | undefined, formData: FormDa
         data: {
             retailer,
             barcodeValue,
-            barcodeFormat,
+            barcodeFormat: validatedFormat,
             note,
             image: imagePath,
             logo: logo || null,
@@ -197,6 +232,10 @@ export async function deleteCard(id: string) {
 
     if (card && card.user.email === session.user.email) {
         await prisma.card.delete({ where: { id } })
+        if (card.image) {
+            const filePath = path.join(process.cwd(), 'public', card.image)
+            await unlink(filePath).catch(() => {})
+        }
         revalidatePath('/dashboard')
         redirect('/dashboard')
     }
@@ -232,21 +271,31 @@ export async function updateCard(id: string, prevState: string | undefined, form
 
     const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 
+    const validatedFormat = validateBarcodeFormat(barcodeFormat)
+
     let imagePath = existingCard.image
     if (imageFile && imageFile.size > 0) {
         if (imageFile.size > MAX_FILE_SIZE) {
             return 'Image must be under 5MB'
         }
         try {
-            const ext = path.extname(imageFile.name) || '.jpg'
-            const filename = `${randomUUID()}${ext}`
+            const rawBuffer = Buffer.from(await imageFile.arrayBuffer())
+            const processedBuffer = await processUploadedImage(rawBuffer)
+            const filename = `${randomUUID()}.webp`
             const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
             await mkdir(uploadsDir, { recursive: true })
-            const buffer = Buffer.from(await imageFile.arrayBuffer())
-            await writeFile(path.join(uploadsDir, filename), buffer)
+            await writeFile(path.join(uploadsDir, filename), processedBuffer)
+            // Clean up old image file after new one is written successfully
+            if (existingCard.image) {
+                const oldPath = path.join(process.cwd(), 'public', existingCard.image)
+                await unlink(oldPath).catch(() => {})
+            }
             imagePath = `/uploads/${filename}`
-        } catch {
-            // Keep existing image if new upload fails
+        } catch (err) {
+            if (err instanceof Error && err.message.includes('Only JPG')) {
+                return err.message
+            }
+            // Keep existing image for other errors
         }
     }
 
@@ -256,7 +305,7 @@ export async function updateCard(id: string, prevState: string | undefined, form
             retailer,
             note,
             barcodeValue,
-            barcodeFormat,
+            barcodeFormat: validatedFormat,
             image: imagePath,
             ...(logo ? { logo } : {}),
             ...(colorLight ? { colorLight } : {}),
@@ -417,14 +466,21 @@ export async function searchLogos(query: string) {
         name: `${query} (Favicon)`
     })
 
-    // 3. Call Clearbit Autocomplete API (Free)
-    try {
-        const response = await fetch(`https://autocomplete.clearbit.com/v1/companies/suggest?query=${encodeURIComponent(normalizedQuery)}`)
-        if (response.ok) {
-            const data: ClearbitSuggestion[] = await response.json()
-            // data is array of { name: string, domain: string, logo: string }
+    // 3. Call Clearbit and logo.dev in parallel (PERF-03)
+    const [clearbitResult, logoDevResult] = await Promise.allSettled([
+        fetch(`https://autocomplete.clearbit.com/v1/companies/suggest?query=${encodeURIComponent(normalizedQuery)}`),
+        process.env.LOGO_DEV_SECRET
+            ? fetch(`https://api.logo.dev/search?q=${encodeURIComponent(normalizedQuery)}`, {
+                headers: { Authorization: `Bearer ${process.env.LOGO_DEV_SECRET}` }
+            })
+            : Promise.resolve(null),
+    ])
+
+    // Process Clearbit results
+    if (clearbitResult.status === 'fulfilled' && clearbitResult.value?.ok) {
+        try {
+            const data: ClearbitSuggestion[] = await clearbitResult.value.json()
             data.forEach((item) => {
-                // Avoid duplicates
                 const isDuplicate = results.some(r => r.url === item.logo)
                 if (!isDuplicate && cachedLogo?.logoUrl !== item.logo) {
                     results.push({
@@ -434,38 +490,27 @@ export async function searchLogos(query: string) {
                     })
                 }
             })
+        } catch {
+            // Clearbit parse error is best-effort
         }
-    } catch {
-        // Clearbit is best-effort
     }
 
-    // 4. Call logo.dev API if not in cache (or even if in cache, to offer more options)
-    // Only if we have keys
-    if (process.env.LOGO_DEV_SECRET) {
+    // Process logo.dev results
+    if (logoDevResult.status === 'fulfilled' && logoDevResult.value?.ok) {
         try {
-            const response = await fetch(`https://api.logo.dev/search?q=${encodeURIComponent(normalizedQuery)}`, {
-                headers: {
-                    'Authorization': `Bearer ${process.env.LOGO_DEV_SECRET}`
+            const data: LogoDevResult[] = await logoDevResult.value.json()
+            data.slice(0, 5).forEach((item) => {
+                const isDuplicate = results.some(r => r.url === item.logo_url)
+                if (!isDuplicate && cachedLogo?.logoUrl !== item.logo_url) {
+                    results.push({
+                        source: 'api',
+                        url: item.logo_url,
+                        name: item.name || item.domain || ''
+                    })
                 }
             })
-
-            if (response.ok) {
-                const data: LogoDevResult[] = await response.json()
-                // data is array of { name: string, domain: string, logo_url: string }
-                data.slice(0, 5).forEach((item) => {
-                    // Avoid duplicates
-                    const isDuplicate = results.some(r => r.url === item.logo_url)
-                    if (!isDuplicate && cachedLogo?.logoUrl !== item.logo_url) {
-                        results.push({
-                            source: 'api',
-                            url: item.logo_url,
-                            name: item.name || item.domain || ''
-                        })
-                    }
-                })
-            }
         } catch {
-            // Logo.dev is best-effort
+            // Logo.dev parse error is best-effort
         }
     }
 
