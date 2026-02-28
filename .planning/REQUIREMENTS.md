@@ -37,7 +37,7 @@ Requirements for production launch. Each maps to roadmap phases.
 
 ### UX Polish
 
-- [ ] **UX-01**: Categorized barcode scan error messages with actionable remediation text (permission denied, camera not found, decode failure)
+- [x] **UX-01**: Categorized barcode scan error messages with actionable remediation text (permission denied, camera not found, decode failure)
 - [x] **UX-02**: Inline client-side form validation on register, login, and card forms (validate on blur, field-level errors)
 - [x] **UX-03**: Empty state for dashboard with no cards (illustration + "Add your first card" CTA)
 - [x] **UX-04**: Loading/pending states on all Server Action buttons (spinner or "Saving...")
@@ -123,7 +123,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | PERF-01 | Phase 3 | Pending |
 | PERF-02 | Phase 3 | Pending |
 | PERF-03 | Phase 1 | Complete |
-| UX-01 | Phase 2 | Pending |
+| UX-01 | Phase 2 | Complete |
 | UX-02 | Phase 2 | Complete |
 | UX-03 | Phase 2 | Complete |
 | UX-04 | Phase 2 | Complete |

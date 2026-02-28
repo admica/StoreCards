@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-02-28T23:18:51.917Z"
+last_updated: "2026-02-28T23:19:46.838Z"
 progress:
   total_phases: 2
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 6
-  completed_plans: 5
+  completed_plans: 6
 ---
 
 # Project State
@@ -49,6 +49,7 @@ Progress: [█████░░░░░] 33%
 
 *Updated after each plan completion*
 | Phase 02-ux-quality-and-error-handling P03 | 3 | 2 tasks | 3 files |
+| Phase 02-ux-quality-and-error-handling P02 | 12 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -73,6 +74,9 @@ Recent decisions affecting current work:
 - [02-01]: Barcode copy fallback uses inline copied state (not toast) — compact context where toast would feel heavy-handed
 - [Phase 02-03]: Register page shows hint text only when no password field error is active — avoids redundant messaging
 - [Phase 02-03]: Login page converts email/password to controlled inputs (useState) — required for blur validation access in onBlur and onChange
+- [Phase 02-02]: Scan errors (permission-denied, camera-not-found) replace camera view entirely for clarity when camera is unavailable
+- [Phase 02-02]: decode-failure shown as inline overlay (not replacing camera view) since camera section is not visible during image upload flow
+- [Phase 02-02]: startScanning() proactively queries navigator.permissions before activating useZxing to catch pre-init permission denials
 
 ### Pending Todos
 

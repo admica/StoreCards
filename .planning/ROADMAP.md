@@ -13,7 +13,7 @@ StoreCard is a functional loyalty card PWA that needs production hardening befor
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Bug Fixes and Security** - Close live bugs and security gaps before any public user signs up (completed 2026-02-28)
-- [ ] **Phase 2: UX Quality and Error Handling** - Barcode errors, form validation, empty states, and loading feedback
+- [x] **Phase 2: UX Quality and Error Handling** - Barcode errors, form validation, empty states, and loading feedback (completed 2026-02-28)
 - [ ] **Phase 3: Performance Cleanup** - Cookie-based theme and JWT refresh fix eliminate DB queries on every render
 - [ ] **Phase 4: Subscription and Account Management** - Complete billing UI and GDPR account deletion
 - [ ] **Phase 5: PWA Offline Support** - Cache cards and barcodes so the core use case works without network
@@ -48,7 +48,7 @@ Plans:
   3. A user with no cards sees an illustration and "Add your first card" call-to-action instead of an empty screen
   4. Every form (register, login, add card, edit card) shows field-level errors immediately after leaving an invalid field
   5. Buttons that trigger Server Actions show a spinner or "Saving..." while the action is in flight
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [ ] 02-01-PLAN.md — Foundation: sonner install, shared SubmitButton, validation schemas, Barcode error fallback, empty state
@@ -108,7 +108,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Bug Fixes and Security | 3/3 | Complete   | 2026-02-28 |
-| 2. UX Quality and Error Handling | 2/3 | In Progress|  |
+| 2. UX Quality and Error Handling | 3/3 | Complete   | 2026-02-28 |
 | 3. Performance Cleanup | 0/TBD | Not started | - |
 | 4. Subscription and Account Management | 0/TBD | Not started | - |
 | 5. PWA Offline Support | 0/TBD | Not started | - |
