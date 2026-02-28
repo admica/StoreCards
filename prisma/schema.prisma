@@ -7,8 +7,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  url = env("DATABASE_URL")
 }
 
 enum SubscriptionTier {
@@ -34,7 +33,6 @@ model User {
   password               String
   nerdMode               Boolean       @default(false)
   darkMode               Boolean       @default(false)
-  onboardingComplete     Boolean       @default(false)
   subscriptionSelected   Boolean       @default(false)
   createdAt              DateTime      @default(now())
   updatedAt              DateTime      @updatedAt

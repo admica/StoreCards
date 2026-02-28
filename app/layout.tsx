@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
+import Script from 'next/script'
 import './globals.css'
 import BottomNav from './components/BottomNav'
 import { ThemeProvider } from './providers/theme-provider'
@@ -16,8 +17,8 @@ export const metadata: Metadata = {
     keywords: ['loyalty cards', 'wallet', 'store cards', 'digital wallet'],
     authors: [{ name: 'StoreCard Team' }],
     icons: [
-        { rel: 'apple-touch-icon', url: '/icons/icon-192x192.png' },
-        { rel: 'icon', url: '/icons/icon-192x192.png' },
+        { rel: 'apple-touch-icon', url: '/icon-192.png' },
+        { rel: 'icon', url: '/icon-192.png' },
     ],
 }
 
@@ -58,6 +59,13 @@ export default async function RootLayout({
                     {children}
                     <BottomNav />
                 </ThemeProvider>
+                <Script
+                    id="register-sw"
+                    strategy="afterInteractive"
+                    dangerouslySetInnerHTML={{
+                        __html: `if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js'); }`,
+                    }}
+                />
             </body>
         </html>
     )

@@ -189,19 +189,5 @@ export async function extractColorsFromImage(
     }
 }
 
-/**
- * Extract colors from an image URL (for server-side or backfill)
- * Note: This requires the image to be accessible and may have CORS restrictions
- */
-export async function extractColorsFromUrl(
-    _imageUrl: string
-): Promise<{ colorLight: string; colorDark: string } | null> {
-    void _imageUrl
-    // This is for server-side usage - needs node-canvas or similar
-    // For now, we'll handle this in the browser during logo selection
-    console.warn('extractColorsFromUrl is not implemented for server-side. Use extractColorsFromImage in browser.')
-    return null
-}
-
 
 

@@ -13,7 +13,6 @@ type SubscriptionPayload = {
 
 type ExtendedToken = JWT & {
     id?: string
-    onboardingComplete?: boolean
     subscriptionSelected?: boolean
     subscription?: SubscriptionPayload
 }
@@ -30,7 +29,6 @@ export const authConfig = {
 
             if (typedToken && session.user) {
                 session.user.id = typedToken.id as string
-                session.user.onboardingComplete = typedToken.onboardingComplete as boolean
                 session.user.subscriptionSelected = Boolean(typedToken.subscriptionSelected)
 
                 if (typedToken.subscription) {
@@ -47,13 +45,11 @@ export const authConfig = {
             if (user) {
                 const userData = user as {
                     id?: string
-                    onboardingComplete?: boolean
                     subscriptionSelected?: boolean
                 }
                 if (userData.id) {
                     typedToken.id = userData.id
                 }
-                typedToken.onboardingComplete = userData.onboardingComplete
                 typedToken.subscriptionSelected = userData.subscriptionSelected
 
                 // Attach subscription data on initial sign-in
@@ -87,14 +83,12 @@ export const authConfig = {
                         where: { email: token.email },
                         select: {
                             id: true,
-                            onboardingComplete: true,
                             subscriptionSelected: true,
                         },
                     })
 
                     if (dbUser) {
                         typedToken.id = dbUser.id
-                        typedToken.onboardingComplete = dbUser.onboardingComplete
                         typedToken.subscriptionSelected = dbUser.subscriptionSelected
 
                         // Add subscription data

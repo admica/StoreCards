@@ -7,6 +7,12 @@ const AUTH_PATHS = ['/api/auth/callback/credentials', '/login', '/register']
 
 const { auth } = NextAuth(authConfig)
 
+// auth() from NextAuth accepts NextAuthRequest which extends NextRequest.
+// The cast is required because the overload resolution prefers the callback
+// form over the direct-call form without explicit narrowing.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const authMiddleware = auth as (req: NextRequest) => Promise<any>
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const isAuthPath = AUTH_PATHS.some(p => pathname.startsWith(p))
@@ -26,7 +32,7 @@ export function proxy(request: NextRequest) {
   }
 
   // Delegate auth routing to NextAuth (same behavior as old middleware.ts)
-  return auth(request as any)
+  return authMiddleware(request)
 }
 
 export const config = {
