@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 
 type Theme = 'light' | 'dark'
 
@@ -32,13 +32,13 @@ export function ThemeProvider({
         root.classList.remove('no-transitions')
     }, [theme])
 
-    const setTheme = (newTheme: Theme) => {
+    const setTheme = useCallback((newTheme: Theme) => {
         setThemeState(newTheme)
-    }
+    }, [])
 
-    const toggleTheme = () => {
+    const toggleTheme = useCallback(() => {
         setThemeState((prev) => (prev === 'light' ? 'dark' : 'light'))
-    }
+    }, [])
 
     return (
         <ThemeContext.Provider value={{ theme, setTheme, toggleTheme }}>

@@ -1,17 +1,13 @@
 'use client'
 
 import { updateDarkMode } from '@/app/lib/actions'
-import { useEffect, useTransition } from 'react'
+import { useTransition } from 'react'
 import { useTheme } from '@/app/providers/theme-provider'
 
 export default function DarkModeToggle({ initialValue }: { initialValue: boolean }) {
     const { theme, setTheme } = useTheme()
     const [isPending, startTransition] = useTransition()
     const isDark = theme === 'dark'
-
-    useEffect(() => {
-        setTheme(initialValue ? 'dark' : 'light')
-    }, [initialValue, setTheme])
 
     const handleToggle = () => {
         const newValue = !isDark
