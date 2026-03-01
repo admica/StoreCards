@@ -3,7 +3,6 @@ import 'next-auth'
 
 declare module 'next-auth' {
   interface User {
-    onboardingComplete?: boolean
     subscriptionSelected?: boolean
     subscription?: {
       tier: SubscriptionTier

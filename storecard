@@ -1,0 +1,261 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+APP_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$APP_DIR"
+
+PID_FILE="$APP_DIR/.storecard.pid"
+HTTPS_PID_FILE="$APP_DIR/.storecard-https.pid"
+LOG_FILE="$APP_DIR/.storecard.log"
+HTTPS_LOG_FILE="$APP_DIR/.storecard-https.log"
+PORT=2222
+HTTPS_PORT=2223
+
+usage() {
+  cat <<EOF
+StoreCard — Loyalty Card Manager
+
+Usage: ./storecard <command>
+
+Commands:
+  start       Build and start the app (production mode)
+  dev         Start in development mode (hot reload)
+  stop        Stop the running app
+  restart     Restart the app
+  status      Show app and database status
+  logs        Tail application logs (Ctrl+C to stop)
+  migrate     Run pending database migrations
+  build       Rebuild the app (run after code changes)
+  db-shell    Open psql to the storecards database
+
+EOF
+}
+
+check_env() {
+  if [ ! -f .env.local ]; then
+    echo "Error: .env.local not found."
+    echo "Copy env.example to .env.local and fill in your values:"
+    echo "  cp env.example .env.local"
+    exit 1
+  fi
+}
+
+check_db() {
+  if ! pg_isready -q 2>/dev/null; then
+    echo "Error: PostgreSQL is not running."
+    echo "Start it with: sudo systemctl start postgresql"
+    exit 1
+  fi
+}
+
+ensure_database() {
+  if ! psql -U postgres -lqt 2>/dev/null | cut -d\| -f1 | grep -qw storecards; then
+    echo "Creating database 'storecards'..."
+    psql -U postgres -c "CREATE DATABASE storecards;" 2>/dev/null
+  fi
+}
+
+load_env() {
+  set -a
+  # shellcheck disable=SC1091
+  source .env.local
+  set +a
+}
+
+is_running() {
+  if [ -f "$PID_FILE" ]; then
+    local pid
+    pid=$(cat "$PID_FILE")
+    if kill -0 "$pid" 2>/dev/null; then
+      return 0
+    fi
+    rm -f "$PID_FILE"
+  fi
+  return 1
+}
+
+get_pid() {
+  cat "$PID_FILE" 2>/dev/null
+}
+
+case "${1:-}" in
+  start)
+    check_env
+    check_db
+    ensure_database
+
+    if is_running; then
+      echo "StoreCard is already running (PID $(get_pid))."
+      echo "http://localhost:$PORT"
+      exit 0
+    fi
+
+    load_env
+
+    # Install deps if needed
+    if [ ! -d node_modules ]; then
+      echo "Installing dependencies..."
+      npm ci
+    fi
+
+    # Build
+    echo "Building..."
+    npm run build
+
+    # Migrate
+    echo "Running migrations..."
+    npx prisma migrate deploy
+
+    # Copy static assets into standalone build
+    cp -r .next/static .next/standalone/.next/static
+    cp -r public .next/standalone/public
+
+    # Start production server
+    echo "Starting StoreCard..."
+    HOSTNAME=0.0.0.0 PORT=$PORT nohup node .next/standalone/server.js > "$LOG_FILE" 2>&1 &
+    echo $! > "$PID_FILE"
+
+    sleep 2
+    if is_running; then
+      echo ""
+      echo "StoreCard is running at http://localhost:$PORT"
+      echo "PID: $(get_pid)"
+
+      # Start HTTPS proxy if certs exist
+      if [ -f "$APP_DIR/certs/server.crt" ] && [ -f "$APP_DIR/certs/server.key" ]; then
+        echo "Starting HTTPS proxy..."
+        nohup node "$APP_DIR/https-proxy.js" > "$HTTPS_LOG_FILE" 2>&1 &
+        echo $! > "$HTTPS_PID_FILE"
+        sleep 1
+        if [ -f "$APP_DIR/certs/.hostname" ]; then
+          HTTPS_HOST=$(cat "$APP_DIR/certs/.hostname")
+          echo "HTTPS available at https://$HTTPS_HOST:$HTTPS_PORT"
+        else
+          echo "HTTPS available at https://localhost:$HTTPS_PORT"
+        fi
+      fi
+
+      echo "Logs: ./storecard logs"
+    else
+      echo "Error: App failed to start. Check logs:"
+      tail -20 "$LOG_FILE"
+      exit 1
+    fi
+    ;;
+
+  dev)
+    check_env
+    check_db
+    ensure_database
+    load_env
+
+    if [ ! -d node_modules ]; then
+      echo "Installing dependencies..."
+      npm ci
+    fi
+
+    echo "Running migrations..."
+    npx prisma migrate deploy
+
+    echo "Starting dev server..."
+    echo "http://localhost:$PORT"
+    npx next dev --port $PORT
+    ;;
+
+  stop)
+    # Stop HTTPS proxy if running
+    if [ -f "$HTTPS_PID_FILE" ]; then
+      https_pid=$(cat "$HTTPS_PID_FILE")
+      if kill -0 "$https_pid" 2>/dev/null; then
+        echo "Stopping HTTPS proxy (PID $https_pid)..."
+        kill "$https_pid"
+      fi
+      rm -f "$HTTPS_PID_FILE"
+    fi
+
+    if is_running; then
+      local_pid=$(get_pid)
+      echo "Stopping StoreCard (PID $local_pid)..."
+      kill "$local_pid"
+      rm -f "$PID_FILE"
+      echo "Stopped."
+    else
+      echo "StoreCard is not running."
+    fi
+    ;;
+
+  restart)
+    "$0" stop
+    sleep 1
+    "$0" start
+    ;;
+
+  status)
+    echo "StoreCard Status"
+    echo "================"
+    echo ""
+
+    # Database
+    if pg_isready -q 2>/dev/null; then
+      echo "Database:  running"
+    else
+      echo "Database:  stopped"
+    fi
+
+    # App
+    if is_running; then
+      echo "App:       running (PID $(get_pid))"
+      echo "URL:       http://localhost:$PORT"
+    else
+      echo "App:       stopped"
+    fi
+
+    # HTTPS proxy
+    if [ -f "$HTTPS_PID_FILE" ]; then
+      https_pid=$(cat "$HTTPS_PID_FILE")
+      if kill -0 "$https_pid" 2>/dev/null; then
+        echo "HTTPS:     running (PID $https_pid)"
+        if [ -f "$APP_DIR/certs/.hostname" ]; then
+          echo "HTTPS URL: https://$(cat "$APP_DIR/certs/.hostname"):$HTTPS_PORT"
+        else
+          echo "HTTPS URL: https://localhost:$HTTPS_PORT"
+        fi
+      else
+        echo "HTTPS:     stopped"
+      fi
+    fi
+    ;;
+
+  logs)
+    if [ -f "$LOG_FILE" ]; then
+      tail -f "$LOG_FILE"
+    else
+      echo "No log file found. Start the app first."
+    fi
+    ;;
+
+  migrate)
+    check_env
+    check_db
+    load_env
+    echo "Running migrations..."
+    npx prisma migrate deploy
+    echo "Done."
+    ;;
+
+  build)
+    check_env
+    load_env
+    echo "Building..."
+    npm run build
+    echo "Build complete. Run './storecard restart' to apply."
+    ;;
+
+  db-shell)
+    psql -U postgres -d storecards
+    ;;
+
+  *)
+    usage
+    ;;
+esac

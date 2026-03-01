@@ -2,21 +2,21 @@ import { Stripe } from 'stripe'
 import { prisma } from './prisma'
 import { SubscriptionStatus, SubscriptionTier } from '@prisma/client'
 
-// Initialize Stripe client defensively for build-time compatibility
-let stripe: Stripe
-try {
+function getStripe(): Stripe {
   const apiKey = process.env.STRIPE_SECRET_KEY
   if (!apiKey) {
-    // Create a dummy client for build-time when env vars aren't available
-    stripe = new Stripe('sk_test_dummy', { apiVersion: '2025-11-17.clover' })
-  } else {
-    stripe = new Stripe(apiKey, {
-      apiVersion: '2025-11-17.clover',
-    })
+    throw new Error('STRIPE_SECRET_KEY is not configured')
   }
-} catch {
-  // Fallback for build-time
-  stripe = new Stripe('sk_test_dummy', { apiVersion: '2025-11-17.clover' })
+  return new Stripe(apiKey, { apiVersion: '2025-11-17.clover' })
+}
+
+// Lazy-initialized: only created when actually used at runtime
+let _stripe: Stripe | null = null
+function stripe(): Stripe {
+  if (!_stripe) {
+    _stripe = getStripe()
+  }
+  return _stripe
 }
 
 export { stripe }
@@ -43,11 +43,11 @@ export class SubscriptionService {
 
     if (subscription.stripeCustomerId) {
       // Customer already exists
-      return await stripe.customers.retrieve(subscription.stripeCustomerId)
+      return await stripe().customers.retrieve(subscription.stripeCustomerId)
     }
 
     // Create new customer
-    const customer = await stripe.customers.create({
+    const customer = await stripe().customers.create({
       email: email,
       metadata: {
         userId: userId,
@@ -83,7 +83,7 @@ export class SubscriptionService {
 
     const customer = await this.createOrGetCustomer(userId, user.email)
 
-    const session = await stripe.checkout.sessions.create({
+    const session = await stripe().checkout.sessions.create({
       customer: customer.id,
       payment_method_types: ['card'],
       line_items: [
@@ -116,7 +116,7 @@ export class SubscriptionService {
       throw new Error('No active subscription found')
     }
 
-    const stripeSubscription = await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+    const stripeSubscription = await stripe().subscriptions.update(subscription.stripeSubscriptionId, {
       cancel_at_period_end: true,
     }) as Stripe.Subscription
 
@@ -146,10 +146,10 @@ export class SubscriptionService {
     }
 
     // Get current subscription
-    const stripeSubscription = await stripe.subscriptions.retrieve(subscription.stripeSubscriptionId)
+    const stripeSubscription = await stripe().subscriptions.retrieve(subscription.stripeSubscriptionId)
 
     // Update the subscription with new price
-    const updatedSubscription = await stripe.subscriptions.update(subscription.stripeSubscriptionId, {
+    const updatedSubscription = await stripe().subscriptions.update(subscription.stripeSubscriptionId, {
       items: [
         {
           id: stripeSubscription.items.data[0].id,
@@ -204,7 +204,7 @@ export class SubscriptionService {
    * Sync subscription data from Stripe webhook
    */
   static async syncSubscriptionFromStripe(stripeSubscription: Stripe.Subscription) {
-    const customer = await stripe.customers.retrieve(stripeSubscription.customer as string)
+    const customer = await stripe().customers.retrieve(stripeSubscription.customer as string)
     if (!('metadata' in customer) || !customer.metadata?.userId) {
       throw new Error('Customer metadata not found')
     }

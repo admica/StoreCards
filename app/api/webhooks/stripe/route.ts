@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     // Verify webhook signature
     let event: Stripe.Event
     try {
-      event = stripe.webhooks.constructEvent(
+      event = stripe().webhooks.constructEvent(
         body,
         signature,
         process.env.STRIPE_WEBHOOK_SECRET
@@ -84,7 +84,7 @@ async function handlePaymentSucceeded(invoice: InvoiceWithSubscription) {
     : invoice.subscription?.id
 
   if (subscriptionId) {
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+    const subscription = await stripe().subscriptions.retrieve(subscriptionId)
     await SubscriptionService.syncSubscriptionFromStripe(subscription)
   }
 }
@@ -96,8 +96,8 @@ async function handlePaymentFailed(invoice: InvoiceWithSubscription) {
     : invoice.subscription?.id
 
   if (subscriptionId) {
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId)
-    const customer = await stripe.customers.retrieve(subscription.customer as string)
+    const subscription = await stripe().subscriptions.retrieve(subscriptionId)
+    const customer = await stripe().customers.retrieve(subscription.customer as string)
 
     // Check if customer is not deleted and has metadata
     if (!customer.deleted && customer.metadata?.userId) {

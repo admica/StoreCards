@@ -7,6 +7,6 @@ export default function robots(): MetadataRoute.Robots {
             allow: '/',
             disallow: '/dashboard/',
         },
-        sitemap: 'https://storecard.vercel.app/sitemap.xml',
+        sitemap: `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/sitemap.xml`,
     }
 }

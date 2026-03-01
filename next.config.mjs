@@ -3,7 +3,7 @@ const nextConfig = {
     reactStrictMode: true,
 
     serverExternalPackages: ['@prisma/client'],
-    output: 'standalone',  // Crucial for Vercel serverless (includes Prisma binaries)
+    output: 'standalone',  // Required for Docker/self-hosted deployment
     env: {
         // Expose env vars to browser if needed (e.g., NEXTAUTH_URL)
     },
